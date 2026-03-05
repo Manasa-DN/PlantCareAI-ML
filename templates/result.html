@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analysis Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="navbar">
+    <h2>🌿 PlantCare AI</h2>
+    <div>
+        <a href="/">Home</a>
+        <a href="/store">Store</a>
+        <a href="/dashboard">Dashboard</a>
+    </div>
+</div>
+
+<div class="result-shell">
+    <aside class="result-sidebar glass-card">
+        <img src="/{{ image_path }}" class="result-img">
+
+        {% if is_uncertain %}
+        <div class="uncertainty-banner" style="margin-top: 14px;">
+            Prediction confidence is low. Please capture another clear image or consult an expert before taking strong action.
+        </div>
+        {% endif %}
+
+        <div class="severity-chip" id="severityChip" style="margin-top: 14px;">Analyzing severity…</div>
+        <h2 class="result-title">{{ disease }}</h2>
+
+        <div class="progress-bar compact">
+            <div class="progress" id="progressBar">{{ confidence }}%</div>
+        </div>
+
+        <div class="chart-wrap small">
+            <canvas id="confidenceChart"></canvas>
+        </div>
+
+        <div class="metric-row compact">
+            <div class="metric-pill">
+                <span class="metric-label">Confidence</span>
+                <span class="metric-value">{{ confidence }}%</span>
+            </div>
+            <div class="metric-pill">
+                <span class="metric-label">Rain</span>
+                <span class="metric-value">{{ rain_probability }}%</span>
+            </div>
+        </div>
+
+        <nav class="side-nav" aria-label="Result navigation">
+            <a href="#overview">Overview</a>
+            <a href="#treatment">Treatment Advisor</a>
+            <a href="#timeline">Care Timeline</a>
+            <a href="#inputs">Recommended Inputs</a>
+        </nav>
+
+        <div class="side-actions">
+            <a href="/upload" class="sidebar-cta">Upload another image</a>
+            <a href="/store" class="sidebar-cta secondary">Open store</a>
+        </div>
+    </aside>
+
+    <main class="result-main">
+        <section id="overview" class="glass-card section-card">
+            <h3 class="section-title">Overview</h3>
+
+            <h4>Description</h4>
+            <p>{{ description }}</p>
+
+            <h4>Cause</h4>
+            <p>{{ cause }}</p>
+
+            <h4>Weather Advice</h4>
+            <p>{{ weather_advice }}</p>
+        </section>
+
+        <section id="treatment" class="glass-card section-card">
+            <h3 class="section-title">Treatment Advisor</h3>
+
+            <div class="checklist" style="margin-top: 0;">
+                <p class="checklist-title">Recommended next steps</p>
+                <ul>
+                    <li>Inspect nearby plants for similar symptoms.</li>
+                    <li>Isolate heavily infected plants if possible.</li>
+                    <li>Follow the suggested treatment and avoid over‑watering.</li>
+                    <li>Re‑scan in a few days to track progress.</li>
+                </ul>
+            </div>
+
+            <h4>Treatment</h4>
+            <p>{{ treatment }}</p>
+
+            <h4>Prevention</h4>
+            <p>{{ prevention }}</p>
+        </section>
+
+        <section id="timeline" class="glass-card section-card">
+            <h3 class="section-title">Care Timeline</h3>
+
+            <div class="timeline-block">
+                <p><strong>Today:</strong> {{ care_today }}</p>
+                <p><strong>Next 3–7 days:</strong> {{ care_next_days }}</p>
+                <p><strong>Next 2 weeks:</strong> {{ care_next_weeks }}</p>
+            </div>
+
+            <h4>Fertilizer Reminder</h4>
+            <p>Apply every {{ fertilizer_days }} days</p>
+            <p>Next Date: {{ next_date }}</p>
+        </section>
+
+        <section id="inputs" class="glass-card section-card">
+            <div class="recommendations-header" style="margin-top: 0;">
+                <h3 class="section-title" style="margin: 0;">Recommended Inputs</h3>
+                <a href="/store" class="product-cta">Open store</a>
+            </div>
+
+            <div class="store-grid compact" style="margin-bottom: 0;">
+                {% for p in recommended_products %}
+                <div class="product-card compact">
+                    <div class="product-header">
+                        <h3>{{ p.name }}</h3>
+                        <span class="product-tag">{{ p.tag }}</span>
+                    </div>
+                    <p class="product-meta">
+                        <span>{{ p.type }}</span>
+                        <span>•</span>
+                        <span>Crop: {{ p.crop }}</span>
+                    </p>
+                    <p class="product-price">{{ p.price }}</p>
+                    <p class="product-usage">{{ p.usage }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Safe JavaScript -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var confidence = parseFloat("{{ confidence }}");
+
+        // Progress bar fill
+        var pb = document.getElementById("progressBar");
+        if (pb) pb.style.width = confidence + "%";
+
+        // Confidence doughnut
+        var canvas = document.getElementById("confidenceChart");
+        if (canvas) {
+            new Chart(canvas, {
+                type: "doughnut",
+                data: {
+                    labels: ["Confidence", "Remaining"],
+                    datasets: [{
+                        data: [confidence, 100 - confidence],
+                        backgroundColor: ["#4f46e5", "#1f2937"]
+                    }]
+                },
+                options: {
+                    cutout: "72%",
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Severity chip based on confidence
+        var chip = document.getElementById("severityChip");
+        if (chip) {
+            chip.classList.remove("high", "moderate", "low");
+            if (confidence >= 85) {
+                chip.textContent = "High Severity Risk";
+                chip.classList.add("high");
+            } else if (confidence >= 60) {
+                chip.textContent = "Moderate Severity";
+                chip.classList.add("moderate");
+            } else {
+                chip.textContent = "Low Severity";
+                chip.classList.add("low");
+            }
+        }
+
+    });
+</script>
+
+{% include "_chat_widget.html" %}
+
+</body>
+</html>

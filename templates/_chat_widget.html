@@ -1,0 +1,91 @@
+<button id="chat-fab" type="button" aria-label="Open chat">Chat</button>
+
+<div id="chat-widget" class="chat-hidden" aria-live="polite">
+  <div id="chat-header">
+    <div>
+      <div id="chat-title">Crop Care Assistant</div>
+      <div id="chat-subtitle">Ask about symptoms, treatment, or prevention.</div>
+    </div>
+    <button id="chat-close" type="button" aria-label="Close chat">✕</button>
+  </div>
+
+  <div id="chat-body"></div>
+
+  <div id="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Type your question…" />
+    <button id="chat-send" type="button">Send</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const fab = document.getElementById("chat-fab");
+    const widget = document.getElementById("chat-widget");
+    const closeBtn = document.getElementById("chat-close");
+    const sendBtn = document.getElementById("chat-send");
+    const input = document.getElementById("chat-input");
+    const body = document.getElementById("chat-body");
+
+    const context = {
+      disease: "{{ disease|default('') }}",
+      confidence: "{{ confidence|default('') }}",
+      rain_probability: "{{ rain_probability|default('') }}",
+      care_today: "{{ care_today|default('') }}",
+      care_next_days: "{{ care_next_days|default('') }}",
+      care_next_weeks: "{{ care_next_weeks|default('') }}",
+      city: "{{ request.form.get('city','') if request and request.form else '' }}",
+    };
+
+    function openChat() {
+      // Start fresh every time the widget is opened
+      widget.classList.remove("chat-hidden");
+      body.innerHTML = "";
+      delete body.dataset.welcome;
+      appendMsg("assistant", "Hi! Tell me your crop and what you are seeing on the leaf.");
+      body.dataset.welcome = "1";
+      input.focus();
+    }
+
+    function closeChat() {
+      widget.classList.add("chat-hidden");
+    }
+
+    function appendMsg(role, text) {
+      const div = document.createElement("div");
+      div.className = "chat-msg " + role;
+      div.textContent = text;
+      body.appendChild(div);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    async function send() {
+      const q = input.value.trim();
+      if (!q) return;
+      appendMsg("user", q);
+      input.value = "";
+      const thinking = document.createElement("div");
+      thinking.className = "chat-msg assistant";
+      thinking.textContent = "Thinking...";
+      body.appendChild(thinking);
+      body.scrollTop = body.scrollHeight;
+
+      try {
+        const resp = await fetch("/chat", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ question: q, ...context }),
+        });
+        const data = await resp.json();
+        thinking.textContent = data.answer || "Sorry, I could not answer.";
+      } catch (e) {
+        thinking.textContent = "Network error. Please try again.";
+      }
+    }
+
+    fab.addEventListener("click", openChat);
+    closeBtn.addEventListener("click", closeChat);
+    sendBtn.addEventListener("click", send);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+  });
+</script>
+
