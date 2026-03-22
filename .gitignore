@@ -1,6 +1,14 @@
 venv/
+vev/
 __pycache__/
 *.pyc
 *.db
-uploads/
 .env
+
+backend/__pycache__/
+plant-disease-model/__pycache__/
+frontend/static/uploads/
+frontend/static/gradcam/
+plant_model/
+
+!plant-disease-model/plant_disease_mobilenet_v2.keras

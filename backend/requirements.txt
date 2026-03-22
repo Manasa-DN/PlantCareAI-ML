@@ -1,0 +1,9 @@
+flask
+flask-cors
+requests
+gunicorn
+python-dotenv
+langdetect
+pillow
+numpy
+openai

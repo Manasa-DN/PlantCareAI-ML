@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: plantcareai-backend
+    env: python
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn --chdir backend app:app
+    envVars:
+      - key: HF_MODEL_API_URL
+        value: https://vaibhav76187-plant-disease-model.hf.space/predict

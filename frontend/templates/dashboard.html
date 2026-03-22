@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="{{ lang_code|default('en') }}">
+<head>
+    <meta charset="utf-8">
+    <title>{{ ui.nav_dashboard }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+{% include "_navbar.html" %}
+
+<section class="dashboard-hero">
+    <div class="glass-card dashboard-intro">
+        <div>
+            <p class="dashboard-kicker">{{ ui.nav_dashboard }}</p>
+            <h1>{{ ui.dashboard_intro_title or ui.nav_dashboard }}</h1>
+            <p>{{ ui.dashboard_intro_body or "Track detections, crop health trends, and project activity here." }}</p>
+        </div>
+        <a href="{{ url_for('upload') }}" class="btn dashboard-cta">{{ ui.dashboard_cta or ui.start_analysis }}</a>
+    </div>
+</section>
+
+<div class="dashboard-container">
+    <div class="dashboard-card">
+        <h3>Total Predictions</h3>
+        <h1>{{ total_predictions }}</h1>
+    </div>
+
+    <div class="dashboard-card">
+        <h3>Most Detected Disease</h3>
+        <h1 style="font-size: 26px;">{{ most_detected }}</h1>
+    </div>
+
+    <div class="dashboard-card">
+        <h3>System Status</h3>
+        <h1>Running</h1>
+    </div>
+</div>
+
+<div class="dashboard-analytics">
+    <div class="analytics-card">
+        <h3>Weekly Detections</h3>
+        <canvas id="weeklyChart"></canvas>
+    </div>
+    <div class="analytics-card">
+        <h3>Healthy vs Diseased</h3>
+        <canvas id="healthChart"></canvas>
+    </div>
+    <div class="analytics-card">
+        <h3>Top Crops Detected</h3>
+        <canvas id="cropChart"></canvas>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const weeklyLabels = {{ weekly_labels | tojson }};
+        const weeklyValues = {{ weekly_values | tojson }};
+        const cropLabels = {{ crop_labels | tojson }};
+        const cropValues = {{ crop_values | tojson }};
+        const healthyCount = {{ healthy_count | default(0) }};
+        const diseasedCount = {{ diseased_count | default(0) }};
+
+        const weeklyCtx = document.getElementById("weeklyChart");
+        if (weeklyCtx) {
+            new Chart(weeklyCtx, {
+                type: "line",
+                data: {
+                    labels: weeklyLabels,
+                    datasets: [{
+                        label: "Predictions",
+                        data: weeklyValues,
+                        borderColor: "#4f46e5",
+                        backgroundColor: "rgba(79,70,229,0.25)",
+                        tension: 0.35,
+                        fill: true
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: "#e5e7eb" } },
+                        y: { ticks: { color: "#e5e7eb" }, beginAtZero: true, precision: 0 }
+                    }
+                }
+            });
+        }
+
+        const healthCtx = document.getElementById("healthChart");
+        if (healthCtx) {
+            new Chart(healthCtx, {
+                type: "doughnut",
+                data: {
+                    labels: ["Healthy", "Diseased"],
+                    datasets: [{
+                        data: [healthyCount, diseasedCount],
+                        backgroundColor: ["#22c55e", "#ef4444"]
+                    }]
+                },
+                options: {
+                    plugins: { legend: { labels: { color: "#e5e7eb" } } }
+                }
+            });
+        }
+
+        const cropCtx = document.getElementById("cropChart");
+        if (cropCtx) {
+            new Chart(cropCtx, {
+                type: "bar",
+                data: {
+                    labels: cropLabels,
+                    datasets: [{
+                        label: "Detections",
+                        data: cropValues,
+                        backgroundColor: "#06b6d4"
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: "#e5e7eb" } },
+                        y: { ticks: { color: "#e5e7eb" }, beginAtZero: true, precision: 0 }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+{% include "_footer.html" %}
+{% include "_chat_widget.html" %}
+
+</body>
+</html>
