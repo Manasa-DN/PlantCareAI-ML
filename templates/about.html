@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="{{ lang_code|default('en') }}">
+<head>
+    <meta charset="utf-8">
+    <title>{{ ui.about_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% include "_navbar.html" %}
+
+<div class="info-page">
+    <div class="glass-card info-card">
+        <h1>{{ ui.about_title }}</h1>
+        <p>{{ ui.about_intro }}</p>
+
+        <div class="info-grid">
+            <div class="insight-card">
+                <div class="product-detail-label">{{ ui.about_who }}</div>
+                <div class="product-detail-value">{{ ui.about_who_value }}</div>
+            </div>
+            <div class="insight-card">
+                <div class="product-detail-label">{{ ui.about_offer }}</div>
+                <div class="product-detail-value">{{ ui.about_offer_value }}</div>
+            </div>
+            <div class="insight-card">
+                <div class="product-detail-label">{{ ui.about_note }}</div>
+                <div class="product-detail-value">{{ ui.about_note_value }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card info-card tutorial-section" id="tutorial">
+        <div class="tutorial-copy">
+            <h2>{{ ui.about_tutorial_title }}</h2>
+            <p>{{ ui.about_tutorial_intro }}</p>
+            <div class="tutorial-steps">
+                <div class="tutorial-step"><span>01</span>{{ ui.about_tutorial_step_1 }}</div>
+                <div class="tutorial-step"><span>02</span>{{ ui.about_tutorial_step_2 }}</div>
+                <div class="tutorial-step"><span>03</span>{{ ui.about_tutorial_step_3 }}</div>
+                <div class="tutorial-step"><span>04</span>{{ ui.about_tutorial_step_4 }}</div>
+            </div>
+            <a href="{{ url_for('upload') }}" class="btn btn-detect">{{ ui.about_tutorial_cta }}</a>
+        </div>
+
+        <div class="tutorial-player" aria-label="Animated app tutorial">
+            <div class="tutorial-player-top">
+                <span></span><span></span><span></span>
+            </div>
+            <div class="tutorial-stage">
+                <div class="tutorial-scene active" data-scene="0">
+                    <div class="tutorial-phone">
+                        <div class="tutorial-screen upload">
+                            <div class="pulse-ring"></div>
+                            <div class="mini-card">Upload leaf image</div>
+                            <div class="mini-card soft">Add village name</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-scene" data-scene="1">
+                    <div class="tutorial-phone">
+                        <div class="tutorial-screen result">
+                            <div class="mini-progress"></div>
+                            <div class="mini-card">Disease result</div>
+                            <div class="mini-card accent">AI focus map</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-scene" data-scene="2">
+                    <div class="tutorial-phone">
+                        <div class="tutorial-screen store">
+                            <div class="mini-card">Recommended inputs</div>
+                            <div class="mini-card soft">Payment simulation</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tutorial-scene" data-scene="3">
+                    <div class="tutorial-phone">
+                        <div class="tutorial-screen support">
+                            <div class="mini-card">Contact agriculture department</div>
+                            <div class="mini-card accent">File support request</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tutorial-timeline">
+                <span class="active"></span>
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "_footer.html" %}
+{% include "_chat_widget.html" %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const scenes = Array.from(document.querySelectorAll(".tutorial-scene"));
+    const dots = Array.from(document.querySelectorAll(".tutorial-timeline span"));
+    if (!scenes.length || !dots.length) return;
+
+    let index = 0;
+    function renderScene(nextIndex) {
+        scenes.forEach(function (scene, sceneIndex) {
+            scene.classList.toggle("active", sceneIndex === nextIndex);
+        });
+        dots.forEach(function (dot, dotIndex) {
+            dot.classList.toggle("active", dotIndex === nextIndex);
+        });
+    }
+
+    window.setInterval(function () {
+        index = (index + 1) % scenes.length;
+        renderScene(index);
+    }, 2200);
+});
+</script>
+
+</body>
+</html>

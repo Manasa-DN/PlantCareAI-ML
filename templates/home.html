@@ -1,60 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ lang_code|default('en') }}">
 <head>
-    <title>PlantCare AI</title>
+    <meta charset="utf-8">
+    <title>{{ ui.app_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 
-<div class="navbar">
-    <h2>🌿 PlantCare AI</h2>
-    <div>
-        <a href="/">Home</a>
-        <a href="/store">Store</a>
-        <a href="/dashboard">Dashboard</a>
-    </div>
-</div>
-
-<div class="top-strip">
-    <div class="top-strip-left">
-        <span>Crop Disease Helpline (demo):</span>
-        <strong>1800-180-1551</strong>
-    </div>
-    <div class="lang-pills">
-        <a href="{{ url_for('set_language', code='te') }}" class="lang-pill{% if lang_code == 'te' %} active{% endif %}">తెలుగు</a>
-        <a href="{{ url_for('set_language', code='en') }}" class="lang-pill{% if lang_code == 'en' %} active{% endif %}">English</a>
-        <a href="{{ url_for('set_language', code='hi') }}" class="lang-pill{% if lang_code == 'hi' %} active{% endif %}">हिंदी</a>
-    </div>
-</div>
+{% include "_navbar.html" %}
 
 <div class="hero">
     <h1>{{ ui.home_title }}</h1>
     <p>{{ ui.home_subtitle }}</p>
-    <a href="/upload" class="btn">{{ ui.start_analysis }}</a>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary btn-detect">{{ ui.start_analysis }}</a>
 </div>
 
 <div class="glass-card" style="max-width: 900px; margin: 0 auto 40px; color: #f1f8e9;">
-    <h3 style="margin-bottom: 15px;">How it works</h3>
-    <p style="margin-bottom: 10px;">1. Capture a clear photo of a single leaf in good lighting.</p>
-    <p style="margin-bottom: 10px;">2. Our AI analyzes the leaf for potential diseases in seconds.</p>
-    <p style="margin-bottom: 0;">3. Get confidence score, treatment tips, weather-aware advice, and fertilizer reminders.</p>
+    <h3 style="margin-bottom: 15px;">{{ ui.how_title }}</h3>
+    <p style="margin-bottom: 10px;">1. {{ ui.how_step1 }}</p>
+    <p style="margin-bottom: 10px;">2. {{ ui.how_step2 }}</p>
+    <p style="margin-bottom: 0;">3. {{ ui.how_step3 }}</p>
 </div>
 
 <div class="feature-grid">
     <div class="feature-card">
-        <h4>Weather‑aware insights</h4>
-        <p>Rain probability and temperature‑friendly advice so you spray and fertilize at the right time.</p>
+        <h4>{{ ui.home_feat1_title }}</h4>
+        <p>{{ ui.home_feat1_body }}</p>
     </div>
     <div class="feature-card">
-        <h4>Smart care planner</h4>
-        <p>Automatic fertilizer reminders with the next recommended date for each prediction.</p>
+        <h4>{{ ui.home_feat2_title }}</h4>
+        <p>{{ ui.home_feat2_body }}</p>
     </div>
     <div class="feature-card">
-        <h4>Farmer‑friendly summaries</h4>
-        <p>Simple explanation of disease, cause, and prevention—no data‑science jargon.</p>
+        <h4>{{ ui.home_feat3_title }}</h4>
+        <p>{{ ui.home_feat3_body }}</p>
     </div>
 </div>
 
+{% include "_footer.html" %}
 {% include "_chat_widget.html" %}
 
 </body>

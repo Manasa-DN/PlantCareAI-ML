@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="{{ lang_code|default('en') }}">
+<head>
+    <meta charset="utf-8">
+    <title>{{ ui.contact_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+{% include "_navbar.html" %}
+
+<div class="info-page">
+    <div class="glass-card info-card">
+        <h1>{{ ui.contact_title }}</h1>
+        <p>{{ ui.contact_intro }}</p>
+
+        <div class="info-grid">
+            <div class="insight-card">
+                <div class="product-detail-label">{{ ui.contact_support }}</div>
+                <div class="product-detail-value">support@plantcareai.local</div>
+            </div>
+            <div class="insight-card">
+                <div class="product-detail-label">{{ ui.contact_field }}</div>
+                <div class="product-detail-value">{{ ui.helpline_number }}</div>
+            </div>
+            <div class="insight-card">
+                <div class="product-detail-label">{{ ui.contact_best_for }}</div>
+                <div class="product-detail-value">{{ ui.contact_best_for_value }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card info-card" id="agri-application">
+        <div class="contact-form-heading">
+            <div>
+                <h2>{{ ui.contact_form_title }}</h2>
+                <p>{{ ui.contact_form_intro }}</p>
+            </div>
+            <div class="contact-form-note">{{ ui.contact_form_disclaimer }}</div>
+        </div>
+
+        {% if submission %}
+        <div class="submission-banner">
+            <strong>{{ ui.contact_form_success }}</strong>
+            <span>{{ ui.contact_form_reference }}: {{ submission.reference_id }}</span>
+        </div>
+        {% endif %}
+
+        <form method="post" class="agri-form">
+            <div class="form-grid">
+                <label>
+                    <span>{{ ui.contact_form_name }}</span>
+                    <input type="text" name="farmer_name" value="{{ form_data.farmer_name or '' }}" required>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_phone }}</span>
+                    <input type="tel" name="phone" value="{{ form_data.phone or '' }}" required>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_email }}</span>
+                    <input type="email" name="email" value="{{ form_data.email or '' }}">
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_state }}</span>
+                    <select name="state" required>
+                        <option value="">Select state</option>
+                        {% for state in states %}
+                        <option value="{{ state }}" {% if form_data.state == state %}selected{% endif %}>{{ state }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_district }}</span>
+                    <input type="text" name="district" value="{{ form_data.district or '' }}" required>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_village }}</span>
+                    <input type="text" name="village" value="{{ form_data.village or '' }}" required>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_crop }}</span>
+                    <input type="text" name="crop" value="{{ form_data.crop or '' }}" required>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_issue }}</span>
+                    <select name="issue_type" required>
+                        <option value="">Select request type</option>
+                        {% for issue in support_issues %}
+                        <option value="{{ issue }}" {% if form_data.issue_type == issue %}selected{% endif %}>{{ issue }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_severity }}</span>
+                    <select name="severity" required>
+                        <option value="">Select severity</option>
+                        {% for severity in severity_options %}
+                        <option value="{{ severity }}" {% if form_data.severity == severity %}selected{% endif %}>{{ severity }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span>{{ ui.contact_form_area }}</span>
+                    <input type="text" name="affected_area" value="{{ form_data.affected_area or '' }}">
+                </label>
+                <label class="form-span-2">
+                    <span>{{ ui.contact_form_message }}</span>
+                    <textarea name="message" rows="5" required>{{ form_data.message or '' }}</textarea>
+                </label>
+            </div>
+            <button type="submit" class="btn btn-detect">{{ ui.contact_form_submit }}</button>
+        </form>
+    </div>
+
+    <div class="resource-grid">
+        <a class="glass-card resource-card" href="https://soilhealth.dac.gov.in/soil-lab" target="_blank" rel="noopener noreferrer">
+            <div class="resource-kicker">{{ ui.schemes_verified }}</div>
+            <h3>{{ ui.contact_resource_lab }}</h3>
+            <p>{{ ui.contact_resource_lab_body }}</p>
+        </a>
+        <a class="glass-card resource-card" href="tel:18001801551">
+            <div class="resource-kicker">{{ ui.schemes_verified }}</div>
+            <h3>{{ ui.contact_resource_call }}</h3>
+            <p>{{ ui.contact_resource_call_body }}</p>
+        </a>
+        <a class="glass-card resource-card" href="https://pmfby.gov.in/" target="_blank" rel="noopener noreferrer">
+            <div class="resource-kicker">{{ ui.schemes_verified }}</div>
+            <h3>{{ ui.contact_resource_insurance }}</h3>
+            <p>{{ ui.contact_resource_insurance_body }}</p>
+        </a>
+    </div>
+</div>
+
+{% include "_footer.html" %}
+{% include "_chat_widget.html" %}
+
+</body>
+</html>

@@ -1,66 +1,140 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ lang_code|default('en') }}">
 <head>
-    <title>Input Store</title>
+    <meta charset="utf-8">
+    <title>{{ ui.store_title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 
-<div class="navbar">
-    <h2>🌿 PlantCare AI</h2>
-    <div>
-        <a href="/">Home</a>
-        <a href="/upload">Detect Disease</a>
-        <a href="/dashboard">Dashboard</a>
+{% include "_navbar.html" %}
+
+<section class="store-hero">
+    <div class="store-hero-copy">
+        <div class="resource-kicker">{{ ui.store_marketplace_label }}</div>
+        <h1>{{ ui.store_title }}</h1>
+        <p>{{ ui.store_subtitle }}</p>
+        <div class="store-hero-pills">
+            <span>{{ ui.store_pill_1 }}</span>
+            <span>{{ ui.store_pill_2 }}</span>
+            <span>{{ ui.store_pill_3 }}</span>
+        </div>
     </div>
-</div>
-
-<div class="hero" style="padding: 80px 20px 40px;">
-    <h1 style="font-size: 40px;">Smart Input Store</h1>
-    <p>Browse suggested sprays and fertilizers. This is a demo catalog for hackathon purposes.</p>
-</div>
-
-<div class="store-filters glass-card" style="max-width: 950px; margin: 0 auto 30px;">
-    <form method="get" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
-        <div style="flex: 1 1 200px;">
-            <label style="font-size: 13px; opacity: 0.9;">Filter by crop</label>
-            <input type="text" name="crop" value="{{ crop_filter }}" placeholder="e.g., Tomato, Potato"
-                   style="margin-top: 4px; width: 100%; padding: 10px; border-radius: 8px; border: none;">
+    <div class="store-hero-card glass-card">
+        <div class="store-hero-metric">
+            <strong>{{ products|length }}</strong>
+            <span>{{ ui.store_products_shown }}</span>
         </div>
-        <div style="flex: 1 1 200px;">
-            <label style="font-size: 13px; opacity: 0.9;">Filter by input type</label>
-            <input type="text" name="type" value="{{ type_filter }}" placeholder="Fertilizer, Fungicide…"
-                   style="margin-top: 4px; width: 100%; padding: 10px; border-radius: 8px; border: none;">
+        <div class="store-hero-metric">
+            <strong>{{ label|pretty_label if label else ui.store_all_crops }}</strong>
+            <span>{{ ui.store_current_focus }}</span>
         </div>
-        <div>
-            <button type="submit" class="btn">Apply Filters</button>
+        <div class="store-hero-metric">
+            <strong id="cartItemCountHero">0</strong>
+            <span>{{ ui.store_cart_count }}</span>
         </div>
-    </form>
-</div>
-
-<div class="store-grid">
-    {% for p in products %}
-    <div class="product-card">
-        <div class="product-header">
-            <h3>{{ p.name }}</h3>
-            <span class="product-tag">{{ p.tag }}</span>
-        </div>
-        <p class="product-meta">
-            <span>{{ p.type }}</span>
-            <span>•</span>
-            <span>Crop: {{ p.crop }}</span>
-        </p>
-        <p class="product-price">{{ p.price }}</p>
-        <p class="product-usage">{{ p.usage }}</p>
-        <a href="/upload" class="product-cta">Use with new scan</a>
     </div>
-    {% else %}
-    <p style="text-align: center; opacity: 0.8;">No products match this filter. Try clearing filters.</p>
-    {% endfor %}
+</section>
+
+<div class="store-shell">
+    <section class="store-main">
+        <div class="store-filters glass-card">
+            <form method="get" class="store-filter-form">
+                <input type="hidden" name="label" value="{{ label or '' }}">
+                <label>
+                    <span>{{ ui.store_filter_crop }}</span>
+                    <input type="text" name="crop" value="{{ crop_filter }}" placeholder="e.g., Tomato, Potato">
+                </label>
+                <label>
+                    <span>{{ ui.store_filter_type }}</span>
+                    <input type="text" name="type" value="{{ type_filter }}" placeholder="Fertilizer, Fungicide">
+                </label>
+                <label>
+                    <span>{{ ui.store_search_label }}</span>
+                    <input type="text" name="q" value="{{ q or '' }}" placeholder="{{ ui.store_search_placeholder }}">
+                </label>
+                <button type="submit" class="btn">{{ ui.store_apply_filters }}</button>
+            </form>
+        </div>
+
+        {% if label %}
+        <div class="glass-card store-focus-card">
+            <div>
+                <div class="resource-kicker">{{ ui.store_recommended_for }}</div>
+                <div class="store-focus-title">{{ label|pretty_label }}</div>
+            </div>
+            <a class="sidebar-cta secondary" href="{{ url_for('store') }}">{{ ui.store_clear_focus }}</a>
+        </div>
+        {% endif %}
+
+        <div class="store-grid">
+            {% for p in products %}
+            <article class="product-card marketplace-card">
+                <div class="product-card-top">
+                    <div>
+                        <div class="product-detail-kicker">{{ p.type }}</div>
+                        <h3>{{ p.name }}</h3>
+                    </div>
+                    <span class="product-tag">{{ p.tag }}</span>
+                </div>
+                <p class="product-meta">
+                    <span>{{ ui.store_crop_prefix }}: {{ p.crop }}</span>
+                    <span class="dot-sep"></span>
+                    <span>{{ p.type }}</span>
+                </p>
+                <p class="product-price">{{ p.price }}</p>
+                <p class="product-usage">{{ p.usage }}</p>
+                <div class="marketplace-actions">
+                    <a href="{{ url_for('product_detail', product_id=p.id) }}" class="sidebar-cta secondary">{{ ui.store_shop_item }}</a>
+                    <button
+                        type="button"
+                        class="sidebar-cta cart-add-btn"
+                        data-product-id="{{ p.id }}"
+                        data-product-name="{{ p.name }}"
+                        data-product-price="{{ p.price }}"
+                    >{{ ui.store_add_to_cart }}</button>
+                    <button
+                        type="button"
+                        class="product-cta buy-now-btn"
+                        data-product-id="{{ p.id }}"
+                        data-product-name="{{ p.name }}"
+                        data-product-price="{{ p.price }}"
+                    >{{ ui.store_buy_now }}</button>
+                </div>
+            </article>
+            {% else %}
+            <p style="text-align: center; opacity: 0.8;">{{ ui.store_no_products }}</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <aside class="store-sidebar">
+        <div class="glass-card cart-summary-card">
+            <div class="cart-summary-head">
+                <div>
+                    <div class="resource-kicker">{{ ui.store_cart_title }}</div>
+                    <h2>{{ ui.store_cart_title }}</h2>
+                </div>
+                <span class="scheme-benefit" id="cartItemCountBadge">0 {{ ui.store_cart_count }}</span>
+            </div>
+            <div id="cartItemsList" class="cart-items-list">
+                <p class="cart-empty-text">{{ ui.store_cart_empty }}</p>
+            </div>
+            <div class="cart-summary-footer">
+                <div>
+                    <div class="product-detail-label">{{ ui.store_cart_total }}</div>
+                    <div class="store-focus-title" id="cartTotalValue">Rs 0</div>
+                </div>
+                <button type="button" class="product-cta" id="openCheckoutBtn">{{ ui.store_cart_checkout }}</button>
+                <button type="button" class="sidebar-cta secondary" id="clearCartBtn">{{ ui.store_cart_clear }}</button>
+            </div>
+        </div>
+    </aside>
 </div>
 
+{% include "_footer.html" %}
+{% include "_payment_modal.html" %}
 {% include "_chat_widget.html" %}
 
 </body>
 </html>
-

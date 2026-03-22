@@ -1,19 +1,32 @@
-<button id="chat-fab" type="button" aria-label="Open chat">Chat</button>
+<button id="chat-fab" type="button" aria-label="{{ ui.chat_fab }}">{{ ui.chat_fab }}</button>
 
 <div id="chat-widget" class="chat-hidden" aria-live="polite">
   <div id="chat-header">
     <div>
-      <div id="chat-title">Crop Care Assistant</div>
-      <div id="chat-subtitle">Ask about symptoms, treatment, or prevention.</div>
+      <div id="chat-title">{{ ui.chat_title }}</div>
+      <div id="chat-subtitle">{{ ui.chat_subtitle }}</div>
     </div>
-    <button id="chat-close" type="button" aria-label="Close chat">✕</button>
+    <button id="chat-close" type="button" aria-label="Close">&times;</button>
   </div>
 
   <div id="chat-body"></div>
 
+  <div id="chat-quick-row" class="chat-quick-row">
+    <button class="chip-btn" type="button" data-q="Go to disease detection">{{ ui.chat_quick_treatment }}</button>
+    <button class="chip-btn" type="button" data-q="Explain this page">{{ ui.chat_quick_prevention }}</button>
+    <button class="chip-btn" type="button" data-q="Go to dashboard">{{ ui.chat_quick_fertilizer }}</button>
+    <button class="chip-btn" type="button" data-q="Go to store">{{ ui.chat_quick_photo }}</button>
+  </div>
+
   <div id="chat-input-row">
-    <input id="chat-input" type="text" placeholder="Type your question…" />
-    <button id="chat-send" type="button">Send</button>
+    <input id="chat-input" type="text" placeholder="{{ ui.chat_placeholder }}" />
+    <button id="chat-mic" type="button" title="{{ ui.chat_mic_title }}" class="mic-button" aria-label="{{ ui.chat_mic_title }}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+      </svg>
+    </button>
+    <button id="chat-send" type="button">{{ ui.chat_send }}</button>
   </div>
 </div>
 
@@ -23,31 +36,88 @@
     const widget = document.getElementById("chat-widget");
     const closeBtn = document.getElementById("chat-close");
     const sendBtn = document.getElementById("chat-send");
+    const micBtn = document.getElementById("chat-mic");
     const input = document.getElementById("chat-input");
     const body = document.getElementById("chat-body");
+    const quickRow = document.getElementById("chat-quick-row");
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isListening = false;
 
-    const context = {
-      disease: "{{ disease|default('') }}",
-      confidence: "{{ confidence|default('') }}",
-      rain_probability: "{{ rain_probability|default('') }}",
-      care_today: "{{ care_today|default('') }}",
-      care_next_days: "{{ care_next_days|default('') }}",
-      care_next_weeks: "{{ care_next_weeks|default('') }}",
-      city: "{{ request.form.get('city','') if request and request.form else '' }}",
+    const langMap = {
+      en: "en-IN",
+      hi: "hi-IN",
+      te: "te-IN",
+      kn: "kn-IN",
     };
 
-    function openChat() {
-      // Start fresh every time the widget is opened
-      widget.classList.remove("chat-hidden");
-      body.innerHTML = "";
-      delete body.dataset.welcome;
-      appendMsg("assistant", "Hi! Tell me your crop and what you are seeing on the leaf.");
-      body.dataset.welcome = "1";
-      input.focus();
+    const ui = {
+      thinking: {{ (ui.chat_thinking or "Thinking...")|tojson }},
+      netError: {{ (ui.chat_net_error or "Network error. Please try again.")|tojson }},
+      welcomeGeneric: {{ (ui.chat_welcome_generic or "Hi!")|tojson }},
+      welcomeScan: {{ (ui.chat_welcome_scan or "")|tojson }},
+      noMic: {{ (ui.chat_no_mic or "Mic unavailable")|tojson }},
+    };
+
+    const langCode = {{ (lang_code or "en")|tojson }};
+    const historyKey = "plantcare_chat_history_v1_" + langCode;
+    const lastScanKey = "plantcare_last_scan_v1";
+
+    function safeJsonParse(s, fallback) {
+      try { return JSON.parse(s); } catch (_) { return fallback; }
     }
 
-    function closeChat() {
-      widget.classList.add("chat-hidden");
+    function getLastScan() {
+      try {
+        const raw = localStorage.getItem(lastScanKey);
+        return raw ? safeJsonParse(raw, null) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function pageHeadings() {
+      return Array.from(document.querySelectorAll("h1, h2, h3"))
+        .map(function (el) { return (el.textContent || "").trim(); })
+        .filter(Boolean)
+        .slice(0, 8);
+    }
+
+    function pageSummary() {
+      const source = document.querySelector("main") || document.querySelector(".hero") || document.body;
+      const text = (source.textContent || "").replace(/\s+/g, " ").trim();
+      return text.slice(0, 1200);
+    }
+
+    function currentPageContext() {
+      return {
+        lang_code: langCode,
+        disease: {{ (localized_disease|default(disease|default("")))|tojson }},
+        confidence: {{ (confidence|default(""))|tojson }},
+        rain_probability: {{ (rain_probability|default(""))|tojson }},
+        care_today: {{ (care_today|default(""))|tojson }},
+        care_next_days: {{ (care_next_days|default(""))|tojson }},
+        care_next_weeks: {{ (care_next_weeks|default(""))|tojson }},
+        city: {{ (city|default(""))|tojson }},
+        crop: {{ (localized_crop|default(crop|default("")))|tojson }},
+        page_title: document.title,
+        page_path: window.location.pathname,
+        page_headings: pageHeadings(),
+        page_summary: pageSummary(),
+      };
+    }
+
+    function mergedContext() {
+      const ls = getLastScan() || {};
+      return Object.assign({}, ls, currentPageContext());
+    }
+
+    function formatTemplate(tpl, vars) {
+      return String(tpl || "")
+        .replaceAll("{disease}", vars.disease || "")
+        .replaceAll("{confidence}", String(vars.confidence || ""))
+        .replaceAll("{rain_probability}", String(vars.rain_probability || ""))
+        .trim();
     }
 
     function appendMsg(role, text) {
@@ -58,34 +128,235 @@
       body.scrollTop = body.scrollHeight;
     }
 
-    async function send() {
-      const q = input.value.trim();
-      if (!q) return;
-      appendMsg("user", q);
+    function speakText(text) {
+      if (!window.speechSynthesis || !text) return;
+      const utterance = new SpeechSynthesisUtterance(String(text));
+      utterance.lang = langMap[langCode] || "en-IN";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function wantsSpeech(question) {
+      const q = String(question || "").toLowerCase();
+      return q.includes("read aloud") || q.includes("read this") || q.includes("speak this") || q.includes("read the page") || q.includes("read page") || q.includes("speak") || q.includes("ಮಾತನಾಡು") || q.includes("ಓದಿ") || q.includes("మాట్లాడు") || q.includes("చదువు") || q.includes("बोलो") || q.includes("पढ़ो");
+    }
+
+    function loadHistory() {
+      try {
+        const raw = localStorage.getItem(historyKey);
+        const items = raw ? safeJsonParse(raw, []) : [];
+        return Array.isArray(items) ? items : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveHistory(items) {
+      try {
+        localStorage.setItem(historyKey, JSON.stringify(items.slice(-30)));
+      } catch (_) {}
+    }
+
+    function renderHistory(items) {
+      body.innerHTML = "";
+      for (const m of items) appendMsg(m.role, m.text);
+    }
+
+    function openChat() {
+      widget.classList.remove("chat-hidden");
+      const items = loadHistory();
+      if (items.length) {
+        renderHistory(items);
+      } else {
+        const ctx = mergedContext();
+        if (ctx.disease) {
+          appendMsg("assistant", ui.welcomeScan ? formatTemplate(ui.welcomeScan, ctx) : ui.welcomeGeneric);
+        } else {
+          appendMsg("assistant", ui.welcomeGeneric);
+        }
+        saveHistory([{ role: "assistant", text: body.lastChild ? body.lastChild.textContent : ui.welcomeGeneric }]);
+      }
+      input.focus();
+    }
+
+    function closeChat() {
+      widget.classList.add("chat-hidden");
+      if (recognition && isListening) recognition.stop();
+    }
+
+    function navigateTo(path, message) {
+      appendMsg("assistant", message);
+      const items = loadHistory();
+      items.push({ role: "assistant", text: message, ts: Date.now() });
+      saveHistory(items);
+      window.setTimeout(function () {
+        window.location.href = path;
+      }, 500);
+    }
+
+    function performPageAction(question) {
+      const q = (question || "").toLowerCase().trim();
+      const routes = [
+        { keys: ["disease detection", "detect disease", "detection page", "upload page", "scan page", "open disease detection", "open disease detects page", "disease detects page"], path: "{{ url_for('upload') }}", message: "Opening the disease detection page." },
+        { keys: ["home page", "go home", "homepage"], path: "{{ url_for('home') }}", message: "Opening the home page." },
+        { keys: ["dashboard"], path: "{{ url_for('dashboard') }}", message: "Opening the dashboard." },
+        { keys: ["store", "shop"], path: "{{ url_for('store') }}", message: "Opening the store page." },
+        { keys: ["scheme", "schemes", "government scheme", "government schemes"], path: "{{ url_for('schemes') }}", message: "Opening the government schemes page." },
+        { keys: ["about"], path: "{{ url_for('about') }}", message: "Opening the about page." },
+        { keys: ["contact", "contact agriculture", "contact agriculture department", "contact agriculture office", "file application", "file request", "agriculture department", "agriculture office"], path: "{{ url_for('contact') }}#agri-application", message: "Opening the agriculture contact application." },
+        { keys: ["tutorial", "view tutorial", "how it works", "how to use this app"], path: "{{ url_for('about') }}#tutorial", message: "Opening the tutorial section." }
+      ];
+
+      for (const route of routes) {
+        if (route.keys.some(function (key) { return q.includes(key); })) {
+          navigateTo(route.path, route.message);
+          return true;
+        }
+      }
+
+      if (q.includes("scroll top")) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        appendMsg("assistant", "Scrolling to the top of this page.");
+        return true;
+      }
+
+      if (q.includes("scroll bottom")) {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        appendMsg("assistant", "Scrolling to the bottom of this page.");
+        return true;
+      }
+
+      if (q.includes("read this page") || q.includes("read page") || q.includes("read aloud") || q.includes("page summary") || q.includes("what is there in this page") || q.includes("ಈ ಪುಟ") || q.includes("ఈ పేజీ") || q.includes("इस पेज")) {
+        const summary = pageSummary();
+        const message = summary ? summary.slice(0, 800) : "I could not find enough readable text on this page.";
+        appendMsg("assistant", message);
+        speakText(message);
+        const items = loadHistory();
+        items.push({ role: "assistant", text: message, ts: Date.now() });
+        saveHistory(items);
+        return true;
+      }
+
+      const anchorMap = [
+        { keys: ["overview"], selector: "#overview" },
+        { keys: ["focus map", "heatmap"], selector: "#focus-map" },
+        { keys: ["treatment"], selector: "#treatment" },
+        { keys: ["timeline"], selector: "#timeline" },
+        { keys: ["inputs", "recommended inputs"], selector: "#inputs" },
+        { keys: ["tutorial", "how it works"], selector: "#tutorial" },
+        { keys: ["application", "contact agriculture department", "agriculture form"], selector: "#agri-application" }
+      ];
+
+      for (const item of anchorMap) {
+        if (item.keys.some(function (key) { return q.includes(key); })) {
+          const target = document.querySelector(item.selector);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+            appendMsg("assistant", "Taking you to that section on this page.");
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    async function sendQuestion(q) {
+      const question = (q || input.value || "").trim();
+      if (!question) return;
+
+      const items = loadHistory();
+      appendMsg("user", question);
+      items.push({ role: "user", text: question, ts: Date.now() });
+      saveHistory(items);
       input.value = "";
-      const thinking = document.createElement("div");
-      thinking.className = "chat-msg assistant";
-      thinking.textContent = "Thinking...";
-      body.appendChild(thinking);
+
+      if (performPageAction(question)) return;
+
+      const thinkingEl = document.createElement("div");
+      thinkingEl.className = "chat-msg assistant";
+      thinkingEl.textContent = ui.thinking;
+      body.appendChild(thinkingEl);
       body.scrollTop = body.scrollHeight;
 
+      const ctx = mergedContext();
       try {
         const resp = await fetch("/chat", {
           method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ question: q, ...context }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, ...ctx }),
         });
         const data = await resp.json();
-        thinking.textContent = data.answer || "Sorry, I could not answer.";
+        const answer = (data && data.answer) ? String(data.answer) : "";
+        thinkingEl.textContent = answer || "Sorry, I could not answer.";
+        items.push({ role: "assistant", text: thinkingEl.textContent, ts: Date.now() });
+        saveHistory(items);
+        if (wantsSpeech(question)) {
+          speakText(thinkingEl.textContent);
+        }
       } catch (e) {
-        thinking.textContent = "Network error. Please try again.";
+        thinkingEl.textContent = ui.netError;
+        items.push({ role: "assistant", text: thinkingEl.textContent, ts: Date.now() });
+        saveHistory(items);
       }
+    }
+
+    function initVoice() {
+      if (!SpeechRecognition) {
+        micBtn.disabled = true;
+        micBtn.title = ui.noMic;
+        micBtn.setAttribute("aria-label", ui.noMic);
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = langMap[langCode] || "en-IN";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = function () {
+        isListening = true;
+        micBtn.classList.add("listening");
+      };
+
+      recognition.onend = function () {
+        isListening = false;
+        micBtn.classList.remove("listening");
+      };
+
+      recognition.onresult = function (event) {
+        const transcript = (((event.results || [])[0] || [])[0] || {}).transcript || "";
+        input.value = transcript.trim();
+        if (input.value) {
+          sendQuestion(input.value);
+        }
+      };
+
+      recognition.onerror = function () {
+        isListening = false;
+        micBtn.classList.remove("listening");
+      };
     }
 
     fab.addEventListener("click", openChat);
     closeBtn.addEventListener("click", closeChat);
-    sendBtn.addEventListener("click", send);
-    input.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+    sendBtn.addEventListener("click", function () { sendQuestion(); });
+    micBtn.addEventListener("click", function () {
+      if (!recognition) return;
+      if (isListening) recognition.stop();
+      else recognition.start();
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") sendQuestion();
+    });
+    quickRow.addEventListener("click", function (e) {
+      const btn = e.target && e.target.closest ? e.target.closest("button[data-q]") : null;
+      if (!btn) return;
+      sendQuestion(btn.getAttribute("data-q"));
+    });
+
+    initVoice();
   });
 </script>
-

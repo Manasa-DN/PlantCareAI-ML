@@ -1,0 +1,23 @@
+<footer class="site-footer">
+    <div class="footer-shell">
+        <div class="footer-brand">
+            <div class="footer-title">PlantCare AI</div>
+            <p>{{ ui.footer_tagline }}</p>
+        </div>
+
+        <div class="footer-links">
+            <a href="{{ url_for('home') }}">{{ ui.nav_home }}</a>
+            <a href="{{ url_for('upload') }}">{{ ui.nav_detect }}</a>
+            <a href="{{ url_for('store') }}">{{ ui.nav_store }}</a>
+            <a href="{{ url_for('schemes') }}">{{ ui.nav_schemes }}</a>
+            <a href="{{ url_for('dashboard') }}">{{ ui.nav_dashboard }}</a>
+            <a href="{{ url_for('about') }}">{{ ui.nav_about }}</a>
+            <a href="{{ url_for('contact') }}">{{ ui.nav_contact }}</a>
+        </div>
+
+        <div class="footer-note">
+            <p>{{ ui.footer_note }}</p>
+            <p>&copy; {{ (ui.footer_rights or "© 2026 PlantCare AI. All rights reserved.").replace("© ", "") }}</p>
+        </div>
+    </div>
+</footer>

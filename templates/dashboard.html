@@ -1,22 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ lang_code|default('en') }}">
 <head>
-    <title>Dashboard</title>
+    <meta charset="utf-8">
+    <title>{{ ui.nav_dashboard }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<div class="navbar">
-    <h2>🌿 PlantCare AI</h2>
-    <div>
-        <a href="/">Home</a>
-        <a href="/store">Store</a>
+{% include "_navbar.html" %}
+
+<section class="dashboard-hero">
+    <div class="glass-card dashboard-intro">
+        <div>
+            <p class="dashboard-kicker">{{ ui.nav_dashboard }}</p>
+            <h1>{{ ui.dashboard_intro_title or ui.nav_dashboard }}</h1>
+            <p>{{ ui.dashboard_intro_body or "Track detections, crop health trends, and project activity here." }}</p>
+        </div>
+        <a href="{{ url_for('upload') }}" class="btn dashboard-cta">{{ ui.dashboard_cta or ui.start_analysis }}</a>
     </div>
-</div>
+</section>
 
 <div class="dashboard-container">
-
     <div class="dashboard-card">
         <h3>Total Predictions</h3>
         <h1>{{ total_predictions }}</h1>
@@ -31,7 +36,6 @@
         <h3>System Status</h3>
         <h1>Running</h1>
     </div>
-
 </div>
 
 <div class="dashboard-analytics">
@@ -124,6 +128,7 @@
     });
 </script>
 
+{% include "_footer.html" %}
 {% include "_chat_widget.html" %}
 
 </body>
