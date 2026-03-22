@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "https://plantcareai-ml-app.onrender.com/$1"
+    }
+  ]
+}
