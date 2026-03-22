@@ -2282,3 +2282,48 @@ body {
         grid-column: auto;
     }
 }
+
+@media(max-width: 520px) {
+    .hero,
+    .info-page,
+    .store-hero,
+    .upload-shell,
+    .result-shell,
+    .store-shell,
+    .dashboard-shell,
+    .section-card,
+    .product-page {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .glass-card,
+    .result-sidebar,
+    .result-main,
+    .upload-panel,
+    .upload-sidecard,
+    .product-main,
+    .product-sidebar {
+        padding: 18px;
+    }
+
+    .result-img,
+    .gradcam-image,
+    .product-hero-image {
+        width: 100%;
+        height: auto;
+    }
+
+    .metric-row,
+    .metric-row.compact,
+    .insight-grid,
+    .gradcam-grid,
+    .store-grid,
+    .store-grid.compact {
+        grid-template-columns: 1fr;
+    }
+
+    .drop-zone {
+        padding: 28px 16px;
+    }
+}

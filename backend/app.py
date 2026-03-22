@@ -1248,6 +1248,77 @@ def analyze_image_quality(img_path: str):
         "tips": tips,
         "badges": badges,
     }
+
+
+def analyze_plant_likelihood(img_path: str):
+    image = Image.open(img_path).convert("RGB")
+    arr = np.asarray(image).astype("float32")
+    normalized = arr / 255.0
+    red = normalized[:, :, 0]
+    green = normalized[:, :, 1]
+    blue = normalized[:, :, 2]
+
+    max_channel = np.max(normalized, axis=2)
+    min_channel = np.min(normalized, axis=2)
+    delta = max_channel - min_channel
+
+    hue = np.zeros_like(max_channel)
+    nonzero = delta > 1e-6
+    red_mask = nonzero & (max_channel == red)
+    green_mask = nonzero & (max_channel == green)
+    blue_mask = nonzero & (max_channel == blue)
+    hue[red_mask] = ((green[red_mask] - blue[red_mask]) / delta[red_mask]) % 6
+    hue[green_mask] = ((blue[green_mask] - red[green_mask]) / delta[green_mask]) + 2
+    hue[blue_mask] = ((red[blue_mask] - green[blue_mask]) / delta[blue_mask]) + 4
+    hue = hue * 60
+
+    saturation = np.where(max_channel > 1e-6, delta / max_channel, 0.0)
+    value = max_channel
+
+    green_mask = (hue >= 35) & (hue <= 140) & (saturation >= 0.18) & (value >= 0.16)
+    yellow_brown_mask = (hue >= 10) & (hue <= 50) & (saturation >= 0.12) & (value >= 0.12)
+    foliage_mask = green_mask | yellow_brown_mask
+
+    height, width = foliage_mask.shape
+    y0, y1 = int(height * 0.2), int(height * 0.8)
+    x0, x1 = int(width * 0.2), int(width * 0.8)
+    center_mask = foliage_mask[y0:y1, x0:x1]
+
+    foliage_ratio = float(foliage_mask.mean())
+    center_foliage_ratio = float(center_mask.mean()) if center_mask.size else foliage_ratio
+    green_strength = float(np.clip(((green - np.maximum(red, blue)).mean() + 0.12) * 4.0, 0.0, 1.0))
+    plant_score = int(round(max(0.0, min(1.0, foliage_ratio * 1.8 + center_foliage_ratio * 2.2 + green_strength * 0.35)) * 100))
+
+    return {
+        "score": plant_score,
+        "foliage_ratio": round(foliage_ratio, 3),
+        "center_foliage_ratio": round(center_foliage_ratio, 3),
+        "green_strength": round(green_strength, 3),
+        "looks_like_plant": plant_score >= 22 and (foliage_ratio >= 0.06 or center_foliage_ratio >= 0.10),
+    }
+
+
+def should_reject_prediction(photo_quality: dict, plant_check: dict, prediction_payload: dict):
+    confidence = float(prediction_payload.get("confidence", 0.0) or 0.0)
+    top_predictions = prediction_payload.get("top_predictions") or []
+    runner_up = float(top_predictions[1].get("confidence", 0.0)) if len(top_predictions) > 1 else 0.0
+    confidence_gap = confidence - runner_up
+
+    reasons = []
+    if not plant_check.get("looks_like_plant"):
+        reasons.append("Image does not look like a plant leaf.")
+    if photo_quality.get("score", 0) < 35:
+        reasons.append("Image quality is too low for a trusted diagnosis.")
+    if confidence < 55:
+        reasons.append("Model confidence is too low.")
+    if confidence_gap < 8:
+        reasons.append("Prediction is too close to other classes.")
+
+    return reasons, {
+        "confidence": confidence,
+        "runner_up": runner_up,
+        "confidence_gap": round(confidence_gap, 2),
+    }
 def to_static_web_path(file_path: Path) -> str:
     return f"static/{file_path.relative_to(STATIC_DIR).as_posix()}"
 
@@ -1596,6 +1667,20 @@ def upload():
             filepath = UPLOAD_DIR / filename
             file.save(filepath)
             print(f"[upload] saved file: {filepath}")
+            plant_check = analyze_plant_likelihood(str(filepath))
+            photo_quality = analyze_image_quality(str(filepath))
+            if not plant_check.get("looks_like_plant"):
+                print("[upload] rejected before model call", {"file": filepath.name, "plant_check": plant_check})
+                lang_code, ui = get_lang()
+                return render_template(
+                    "upload.html",
+                    ui=ui,
+                    lang_code=lang_code,
+                    error_message=(
+                        "Please upload only a plant leaf image. "
+                        "Photos of people, objects, or unclear scenes are not supported."
+                    ),
+                ), 400
 
             try:
                 prediction_payload = call_model_api(filepath)
@@ -1621,7 +1706,28 @@ def upload():
             confidence = float(round(float(prediction_payload.get("confidence", 0.0)), 2))
             predicted_class = prediction_payload.get("label", "Unknown")
             gradcam_context = build_remote_gradcam_context(prediction_payload, filepath)
-            photo_quality = analyze_image_quality(str(filepath))
+            rejection_reasons, trust_metrics = should_reject_prediction(photo_quality, plant_check, prediction_payload)
+            if rejection_reasons:
+                print(
+                    "[upload] prediction rejected",
+                    {
+                        "file": filepath.name,
+                        "plant_check": plant_check,
+                        "photo_quality": photo_quality.get("score"),
+                        "trust_metrics": trust_metrics,
+                        "reasons": rejection_reasons,
+                    },
+                )
+                lang_code, ui = get_lang()
+                return render_template(
+                    "upload.html",
+                    ui=ui,
+                    lang_code=lang_code,
+                    error_message=(
+                        "Please upload a clear plant leaf photo only. "
+                        "This image does not look trustworthy enough for diagnosis yet."
+                    ),
+                ), 400
 
             # Confidence-aware severity level
             if confidence >= 85:

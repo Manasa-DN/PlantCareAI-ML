@@ -2,6 +2,7 @@
 <html lang="{{ lang_code|default('en') }}">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ ui.upload_title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -42,6 +43,9 @@
                 <button type="submit" class="btn btn-primary btn-detect">{{ ui.upload_analyze }}</button>
                 <a href="{{ url_for('about') }}" class="sidebar-cta secondary">{{ ui.upload_help_link }}</a>
             </div>
+            <p style="margin-top: 14px; color: rgba(226,232,240,0.82); font-size: 0.95rem;">
+                Upload one clear plant leaf only. Non-plant photos are rejected to keep results more trustworthy.
+            </p>
         </form>
     </div>
 
