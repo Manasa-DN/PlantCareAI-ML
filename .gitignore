@@ -5,6 +5,9 @@ __pycache__/
 *.db
 .env
 
+/static/
+/templates/
+
 backend/__pycache__/
 plant-disease-model/__pycache__/
 frontend/static/uploads/
