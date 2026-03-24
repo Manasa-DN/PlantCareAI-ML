@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "https://plantcareai-ml-app.onrender.com/$1"
+      "destination": "https://plantcareai-ml.onrender.com/$1"
     }
   ]
 }

@@ -23,7 +23,7 @@ render.yaml
 
 ## Render environment variables
 
-- `HF_MODEL_API_URL=https://vaibhav76187-plant-disease-model.hf.space/predict`
+- `HF_MODEL_API_URL=https://manasadn161-plant-disease-model.hf.space/predict`
 - `OPENWEATHER_API_KEY=...`
 - `OPENROUTER_API_KEY=...`
 - `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`
@@ -37,8 +37,8 @@ render.yaml
 
 ## Vercel
 
-This repo includes [vercel.json](f:/Apps/plant/PlantCareAI/PlantCareAI/vercel.json) that rewrites all traffic to:
+This repo includes [vercel.json](vercel.json) that rewrites all traffic to:
 
-- `https://plantcareai-ml-app.onrender.com`
+- `https://plantcareai-ml.onrender.com`
 
 That means Vercel can be used as the public frontend URL while Render continues to run the Flask app and serve the Jinja templates safely.

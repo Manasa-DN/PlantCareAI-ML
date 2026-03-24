@@ -42,7 +42,7 @@ UPLOAD_DIR = STATIC_DIR / "uploads"
 GRADCAM_DIR = STATIC_DIR / "gradcam"
 HF_MODEL_API_URL = os.environ.get(
     "HF_MODEL_API_URL",
-    "https://vaibhav76187-plant-disease-model.hf.space/predict",
+    "https://manasadn161-plant-disease-model.hf.space/predict",
 ).strip()
 MODEL_API_TIMEOUT = int(os.environ.get("MODEL_API_TIMEOUT", "120"))
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "").strip()
