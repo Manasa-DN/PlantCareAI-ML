@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Input Store</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<div class="navbar">
+    <h2>🌿 PlantCare AI</h2>
+    <div>
+        <a href="/">Home</a>
+        <a href="/upload">Detect Disease</a>
+        <a href="/dashboard">Dashboard</a>
+    </div>
+</div>
+
+<div class="hero" style="padding: 80px 20px 40px;">
+    <h1 style="font-size: 40px;">Smart Input Store</h1>
+    <p>Browse suggested sprays and fertilizers. This is a demo catalog for hackathon purposes.</p>
+</div>
+
+<div class="store-filters glass-card" style="max-width: 950px; margin: 0 auto 30px;">
+    <form method="get" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+        <div style="flex: 1 1 200px;">
+            <label style="font-size: 13px; opacity: 0.9;">Filter by crop</label>
+            <input type="text" name="crop" value="{{ crop_filter }}" placeholder="e.g., Tomato, Potato"
+                   style="margin-top: 4px; width: 100%; padding: 10px; border-radius: 8px; border: none;">
+        </div>
+        <div style="flex: 1 1 200px;">
+            <label style="font-size: 13px; opacity: 0.9;">Filter by input type</label>
+            <input type="text" name="type" value="{{ type_filter }}" placeholder="Fertilizer, Fungicide…"
+                   style="margin-top: 4px; width: 100%; padding: 10px; border-radius: 8px; border: none;">
+        </div>
+        <div>
+            <button type="submit" class="btn">Apply Filters</button>
+        </div>
+    </form>
+</div>
+
+<div class="store-grid">
+    {% for p in products %}
+    <div class="product-card">
+        <div class="product-header">
+            <h3>{{ p.name }}</h3>
+            <span class="product-tag">{{ p.tag }}</span>
+        </div>
+        <p class="product-meta">
+            <span>{{ p.type }}</span>
+            <span>•</span>
+            <span>Crop: {{ p.crop }}</span>
+        </p>
+        <p class="product-price">{{ p.price }}</p>
+        <p class="product-usage">{{ p.usage }}</p>
+        <a href="/upload" class="product-cta">Use with new scan</a>
+    </div>
+    {% else %}
+    <p style="text-align: center; opacity: 0.8;">No products match this filter. Try clearing filters.</p>
+    {% endfor %}
+</div>
+
+{% include "_chat_widget.html" %}
+
+</body>
+</html>
+
