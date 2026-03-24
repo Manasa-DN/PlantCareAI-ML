@@ -356,6 +356,24 @@ body {
     overflow: hidden;
 }
 
+.btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.btn:disabled::after {
+    display: none;
+}
+
+.btn-detect:disabled {
+    animation: none;
+}
+
 .btn:hover {
     transform: translateY(-5px);
     box-shadow: 0 15px 35px rgba(0,0,0,0.3);
@@ -1252,6 +1270,13 @@ body {
     gap: 12px;
     flex-wrap: wrap;
     align-items: center;
+}
+
+.upload-status {
+    margin-top: 10px;
+    min-height: 1.2em;
+    color: rgba(226, 232, 240, 0.82);
+    font-size: 0.95rem;
 }
 
 .upload-highlight {

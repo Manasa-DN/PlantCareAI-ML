@@ -40,9 +40,10 @@
             >
 
             <div class="upload-actions">
-                <button type="submit" class="btn btn-primary btn-detect">{{ ui.upload_analyze }}</button>
+                <button type="submit" class="btn btn-primary btn-detect" id="analyzeButton">{{ ui.upload_analyze }}</button>
                 <a href="{{ url_for('about') }}" class="sidebar-cta secondary">{{ ui.upload_help_link }}</a>
             </div>
+            <p class="upload-status" id="uploadStatus" aria-live="polite"></p>
             <p style="margin-top: 14px; color: rgba(226,232,240,0.82); font-size: 0.95rem;">
                 Upload one clear plant leaf only. Non-plant photos are rejected to keep results more trustworthy.
             </p>
@@ -69,14 +70,88 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("uploadForm");
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
     const preview = document.getElementById("dropPreview");
+    const statusLine = document.getElementById("uploadStatus");
+    const analyzeButton = document.getElementById("analyzeButton");
 
     const emptyPreviewLabel = {{ ui.upload_no_image|tojson }};
 
-    function renderPreview(file) {
-        preview.textContent = file ? file.name : emptyPreviewLabel;
+    function formatBytes(bytes) {
+        if (!bytes && bytes !== 0) return "";
+        if (bytes < 1024) return `${bytes} B`;
+        const kb = bytes / 1024;
+        if (kb < 1024) return `${kb.toFixed(0)} KB`;
+        const mb = kb / 1024;
+        return `${mb.toFixed(2)} MB`;
+    }
+
+    function renderPreview(file, isOptimized) {
+        if (!file) {
+            preview.textContent = emptyPreviewLabel;
+            return;
+        }
+        const badge = isOptimized ? " (optimized)" : "";
+        preview.textContent = `${file.name}${badge} • ${formatBytes(file.size)}`;
+    }
+
+    async function loadImageElementFromFile(file) {
+        return await new Promise(function (resolve, reject) {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = function () {
+                URL.revokeObjectURL(url);
+                resolve(img);
+            };
+            img.onerror = function () {
+                URL.revokeObjectURL(url);
+                reject(new Error("Could not read image file."));
+            };
+            img.src = url;
+        });
+    }
+
+    async function optimizeImageFile(originalFile) {
+        const maxDimension = 1280;
+        const targetBytes = 2 * 1024 * 1024; // Aim under ~2MB to avoid proxy limits
+
+        const source = window.createImageBitmap
+            ? await createImageBitmap(originalFile)
+            : await loadImageElementFromFile(originalFile);
+
+        const width = source.width || source.naturalWidth;
+        const height = source.height || source.naturalHeight;
+        const scale = Math.min(1, maxDimension / Math.max(width, height));
+        const outWidth = Math.max(1, Math.round(width * scale));
+        const outHeight = Math.max(1, Math.round(height * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = outWidth;
+        canvas.height = outHeight;
+
+        const ctx = canvas.getContext("2d", { alpha: false });
+        if (!ctx) throw new Error("Canvas is not supported in this browser.");
+        ctx.drawImage(source, 0, 0, outWidth, outHeight);
+
+        const mime = "image/jpeg";
+        let quality = 0.88;
+        let bestBlob = null;
+
+        for (let attempts = 0; attempts < 4; attempts += 1) {
+            const blob = await new Promise(function (resolve) {
+                canvas.toBlob(resolve, mime, quality);
+            });
+            if (!blob) throw new Error("Image compression failed.");
+            bestBlob = blob;
+            if (blob.size <= targetBytes) break;
+            quality = Math.max(0.65, quality - 0.08);
+        }
+
+        const baseName = (originalFile.name || "leaf").replace(/\.[^.]+$/, "");
+        const optimizedName = `${baseName}_optimized.jpg`;
+        return new File([bestBlob], optimizedName, { type: mime });
     }
 
     ["dragenter", "dragover"].forEach(function (eventName) {
@@ -97,12 +172,50 @@ document.addEventListener("DOMContentLoaded", function () {
         const files = e.dataTransfer.files;
         if (files && files.length) {
             fileInput.files = files;
+            statusLine.textContent = "";
             renderPreview(files[0]);
         }
     });
 
     fileInput.addEventListener("change", function () {
+        statusLine.textContent = "";
         renderPreview(fileInput.files[0]);
+    });
+
+    form.addEventListener("submit", async function (e) {
+        if (form.dataset.submitting === "1") return;
+        if (!form.checkValidity()) return;
+
+        e.preventDefault();
+        form.dataset.submitting = "1";
+
+        const originalButtonText = analyzeButton.textContent;
+        analyzeButton.disabled = true;
+        analyzeButton.textContent = "Analyzing...";
+
+        try {
+            const originalFile = fileInput.files && fileInput.files[0];
+            if (!originalFile) throw new Error("No image selected.");
+
+            const shouldOptimize = originalFile.size > 2 * 1024 * 1024;
+            if (shouldOptimize) {
+                statusLine.textContent = "Optimizing photo for upload...";
+                const optimizedFile = await optimizeImageFile(originalFile);
+                const dt = new DataTransfer();
+                dt.items.add(optimizedFile);
+                fileInput.files = dt.files;
+                renderPreview(optimizedFile, true);
+            }
+
+            statusLine.textContent = "Uploading and analyzing... This can take up to 30–60 seconds on free hosting.";
+            form.submit();
+        } catch (err) {
+            console.error(err);
+            form.dataset.submitting = "0";
+            analyzeButton.disabled = false;
+            analyzeButton.textContent = originalButtonText;
+            statusLine.textContent = "Upload failed. Please try a smaller, clearer leaf photo.";
+        }
     });
 });
 </script>

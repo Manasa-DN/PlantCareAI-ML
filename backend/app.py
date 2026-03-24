@@ -1,4 +1,5 @@
 import base64
+import mimetypes
 import os
 import re
 import sqlite3
@@ -1356,10 +1357,11 @@ def build_remote_gradcam_context(payload: dict, original_image_path: Path):
 
 def call_model_api(image_path: Path) -> dict:
     print(f"[model-api] sending image to {HF_MODEL_API_URL}: {image_path.name}")
+    mime_type = mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
     with image_path.open("rb") as image_file:
         response = requests.post(
             HF_MODEL_API_URL,
-            files={"file": (image_path.name, image_file, "image/jpeg")},
+            files={"file": (image_path.name, image_file, mime_type)},
             timeout=MODEL_API_TIMEOUT,
         )
 
